@@ -216,8 +216,8 @@ function h2hSummary(h2h, teamA, teamB) {
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function num(id) { const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; }
 
-const API_BASE = 'https://match-analyzer-proxy.yourname.workers.dev/?url=';
-
+const API_BASE = 'https://match-analyzer-proxy.masangwi.workers.dev/?url=';
+ 
 async function fetchMatches(dateStr) {
   const key = state.settings.apiKey;
   if (!key) throw new Error('No API key. Add your key in Settings below.');
