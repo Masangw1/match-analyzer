@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Match Analyzer</title>
 <style>
+   /* Hide the up/down arrows on number inputs */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg: #0d1117; --card: #161b22; --border: #30363d;
@@ -137,6 +146,12 @@
 <div id="app"></div>
 
 <script>
+ // Prevent mouse wheel from accidentally changing number inputs
+document.addEventListener('wheel', function(e) {
+  if (document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+}, { passive: true });
 const STORAGE_KEY = 'matchAnalyzer_fixtures_v1';
 const SETTINGS_KEY = 'matchAnalyzer_settings_v1';
 
