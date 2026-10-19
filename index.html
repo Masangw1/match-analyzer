@@ -298,12 +298,16 @@ function setStatus(msg, type) {
   setTimeout(() => { if (state.status && state.status.msg === msg) { state.status = null; render(); } }, 8000);
 }
 
-function render() {
+function render(scrollToTop = true) {
   const app = document.getElementById('app');
   if (state.view === 'list') app.innerHTML = renderList();
   else if (state.view === 'detail') app.innerHTML = renderDetail();
   else if (state.view === 'edit') app.innerHTML = renderEdit();
-  window.scrollTo(0, 0);
+  
+  // Only scroll to top if specifically requested
+  if (scrollToTop) {
+    window.scrollTo(0, 0);
+  }
 }
 function renderStatus() {
   if (!state.status) return '';
@@ -395,11 +399,11 @@ function saveEdit() {
 }
 function deleteFixture(id) { if (!confirm('Delete this fixture?')) return; state.fixtures = state.fixtures.filter(x => x.id !== id); save(); state.view = 'list'; state.currentId = null; render(); }
 function duplicateFixture(id) { const f = state.fixtures.find(x => x.id === id); const copy = JSON.parse(JSON.stringify(f)); copy.id = uid(); state.fixtures.unshift(copy); save(); state.view = 'list'; render(); }
-function cycleForm(side, i) { const arr = state.editing[side === 'home' ? 'homeForm' : 'awayForm']; const order = ['W','D','L']; arr[i] = order[(order.indexOf(arr[i]) + 1) % 3]; preserveInputs(); render(); }
-function addFormDot(side) { const arr = state.editing[side === 'home' ? 'homeForm' : 'awayForm']; if (arr.length >= 10) return; arr.push('W'); preserveInputs(); render(); }
-function clearForm(side) { state.editing[side === 'home' ? 'homeForm' : 'awayForm'] = []; preserveInputs(); render(); }
-function addH2h() { state.editing.h2h = state.editing.h2h || []; state.editing.h2h.push({ date:'', home: state.editing.home || '', away: state.editing.away || '', hg:0, ag:0 }); preserveInputs(); render(); }
-function removeH2h(i) { state.editing.h2h.splice(i, 1); preserveInputs(); render(); }
+function cycleForm(side, i) { const arr = state.editing[side === 'home' ? 'homeForm' : 'awayForm']; const order = ['W','D','L']; arr[i] = order[(order.indexOf(arr[i]) + 1) % 3]; preserveInputs(); render(false); }
+function addFormDot(side) { const arr = state.editing[side === 'home' ? 'homeForm' : 'awayForm']; if (arr.length >= 10) return; arr.push('W'); preserveInputs(); render(false); }
+function clearForm(side) { state.editing[side === 'home' ? 'homeForm' : 'awayForm'] = []; preserveInputs(); render(false); }
+function addH2h() { state.editing.h2h = state.editing.h2h || []; state.editing.h2h.push({ date:'', home: state.editing.home || '', away: state.editing.away || '', hg:0, ag:0 }); preserveInputs(); render(false); }
+function removeH2h(i) { state.editing.h2h.splice(i, 1); preserveInputs(); render(false); }
 function updateH2h(i, field, value) { state.editing.h2h[i][field] = value; }
 function preserveInputs() {
   const e = state.editing; const fields = ['e_home','e_away','e_comp','e_date','e_time','e_venue','e_h_mp','e_h_w','e_h_d','e_h_l','e_h_gf','e_h_ga','e_h_hgf','e_h_hga','e_a_mp','e_a_w','e_a_d','e_a_l','e_a_gf','e_a_ga','e_a_agf','e_a_aga','e_h_inj','e_a_inj','e_h_kp','e_a_kp','e_oh','e_od','e_oa','e_notes'];
