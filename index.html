@@ -384,7 +384,7 @@ function renderEdit() {
 function saveApiKey() { const k = document.getElementById('apiKeyInput')?.value?.trim(); if (!k) { setStatus('Paste your API key first.', 'err'); render(); return; } state.settings.apiKey = k; saveSettings(); setStatus('API key saved.', 'ok'); render(); }
 function openFixture(id) { state.currentId = id; state.view = 'detail'; render(); }
 function backToList() { state.view = 'list'; state.currentId = null; render(); }
-function newFixture() { state.editing = { home: '', away: '', competition: '', date: '', time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home: '', draw: '', away: '' }, notes: '' }; state.currentId = null; state.view = 'edit'; render(); }
+function newFixture() { state.editing = { home: '', away: '', competition: '', date: new Date().toISOString().slice(0, 10), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home: '', draw: '', away: '' }, notes: '' }; state.currentId = null; state.view = 'edit'; render(); }
 function editFixture(id) { state.editing = JSON.parse(JSON.stringify(state.fixtures.find(x => x.id === id))); state.currentId = id; state.view = 'edit'; render(); }
 function cancelEdit() { state.view = state.currentId ? 'detail' : 'list'; render(); }
 function saveEdit() {
@@ -430,7 +430,7 @@ function quickAdd() {
   const format = state.settings.quickAddFormat || 'auto'; const parsed = parseFixtureText(text, format);
   if (!parsed) { const hints = { auto: 'Could not split. Try a dash or 2 lines.', newline: 'Needs exactly two lines.', dash: 'Needs a dash. Example: "Arsenal - Chelsea"', vs: 'Needs "vs". Example: "Arsenal vs Chelsea"', space: 'Needs exactly two words.', tab: 'Paste with a tab.' }; setStatus(hints[format] || 'Could not parse.', 'err'); render(); return; }
   const [home, away] = parsed;
-  const f = { id: uid(), home, away, competition: '', date: '', time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home:'', draw:'', away:'' }, notes: '' };
+  const f = { id: uid(), home, away, competition: '', date: new Date().toISOString().slice(0, 10), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home:'', draw:'', away:'' }, notes: '' };
   state.fixtures.unshift(f); save(); input.value = ''; editFixture(f.id);
 }
 function copyAnalysis(id) {
