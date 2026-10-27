@@ -181,10 +181,27 @@ function factorial(n) { if (n <= 1) return 1; let r = 1; for (let i = 2; i <= n;
 function poissonPmf(k, lambda) { if (lambda <= 0) return k === 0 ? 1 : 0; return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
 function calcXg(home, away, leagueAvg = 1.35) {
   const hm = home.mp || 1, am = away.mp || 1;
-  const homeAttack = (home.gf || 0) / hm; const homeDefense = (home.ga || 0) / hm;
-  const awayAttack = (away.gf || 0) / am; const awayDefense = (away.ga || 0) / am;
+  const homeAttack = (home.gf || 0) / hm;
+  const homeDefense = (home.ga || 0) / hm;
+  const awayAttack = (away.gf || 0) / am;
+  const awayDefense = (away.ga || 0) / am;
+
+  // League Tier Adjustment
+  const hTier = home.tier || 1;
+  const aTier = away.tier || 1;
+  const tierDiff = aTier - hTier; // e.g., Tier 3 vs Tier 1 = diff of 2
+  
+  // 15% boost/penalty per tier difference
+  const tierFactor = 0.15; 
+  const homeMult = Math.max(0.3, 1 + (tierDiff * tierFactor));
+  const awayMult = Math.max(0.3, 1 - (tierDiff * tierFactor));
+
   const HOME_ADV = 1.15, AWAY_ADV = 0.90;
-  return { homeXg: Math.max(0.1, (homeAttack * awayDefense / leagueAvg) * HOME_ADV), awayXg: Math.max(0.1, (awayAttack * homeDefense / leagueAvg) * AWAY_ADV) };
+  
+  const homeXg = ((homeAttack * awayDefense / leagueAvg) * HOME_ADV) * homeMult;
+  const awayXg = ((awayAttack * homeDefense / leagueAvg) * AWAY_ADV) * awayMult;
+
+  return { homeXg: Math.max(0.1, homeXg), awayXg: Math.max(0.1, awayXg) };
 }
 function poissonMatrix(homeXg, awayXg, maxG = 8) {
   const homeP = [], awayP = [];
@@ -374,8 +391,26 @@ function renderEdit() {
   const f = state.editing;
   return `<button class="back-btn" onclick="cancelEdit()">← Cancel</button><h1 style="margin-bottom:16px">${state.currentId ? 'Edit' : 'New'} Fixture</h1>
     <div class="card"><h3>Match Info</h3><div class="grid grid-2"><div class="field"><label>Home Team</label><input id="e_home" value="${f.home||''}"></div><div class="field"><label>Away Team</label><input id="e_away" value="${f.away||''}"></div><div class="field"><label>Competition</label><input id="e_comp" value="${f.competition||''}"></div><div class="field"><label>Date</label><input id="e_date" type="date" onclick="this.showPicker()" value="${f.date||''}"></div><div class="field"><label>Time</label><input id="e_time" value="${f.time||''}"></div><div class="field"><label>Venue</label><input id="e_venue" value="${f.venue||''}"></div></div></div>
-    <div class="grid grid-2"><div class="card"><h3>${f.home||'Home'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_h_mp" type="number" value="${f.homeStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_h_w" type="number" value="${f.homeStats?.w||0}"></div><div class="field"><label>D</label><input id="e_h_d" type="number" value="${f.homeStats?.d||0}"></div><div class="field"><label>L</label><input id="e_h_l" type="number" value="${f.homeStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_h_gf" type="number" value="${f.homeStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_h_ga" type="number" value="${f.homeStats?.ga||0}"></div><div class="field"><label>Home GF</label><input id="e_h_hgf" type="number" value="${f.homeStats?.homeGf||0}"></div><div class="field"><label>Home GA</label><input id="e_h_hga" type="number" value="${f.homeStats?.homeGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_h_form" class="form-dots" style="cursor:pointer">${(f.homeForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('home',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('home')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('home')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_h_inj" value="${f.homeInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_h_kp" value="${f.homeKeyPlayer||''}"></div></div>
-    <div class="card"><h3>${f.away||'Away'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_a_mp" type="number" value="${f.awayStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_a_w" type="number" value="${f.awayStats?.w||0}"></div><div class="field"><label>D</label><input id="e_a_d" type="number" value="${f.awayStats?.d||0}"></div><div class="field"><label>L</label><input id="e_a_l" type="number" value="${f.awayStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_a_gf" type="number" value="${f.awayStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_a_ga" type="number" value="${f.awayStats?.ga||0}"></div><div class="field"><label>Away GF</label><input id="e_a_agf" type="number" value="${f.awayStats?.awayGf||0}"></div><div class="field"><label>Away GA</label><input id="e_a_aga" type="number" value="${f.awayStats?.awayGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_a_form" class="form-dots" style="cursor:pointer">${(f.awayForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('away',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('away')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('away')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_a_inj" value="${f.awayInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_a_kp" value="${f.awayKeyPlayer||''}"></div></div></div>
+    <div class="grid grid-2"><div class="card"><h3>${f.home||'Home'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_h_mp" type="number" value="${f.homeStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_h_w" type="number" value="${f.homeStats?.w||0}"></div><div class="field"><label>D</label><input id="e_h_d" type="number" value="${f.homeStats?.d||0}"></div><div class="field"><label>L</label><input id="e_h_l" type="number" value="${f.homeStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_h_gf" type="number" value="${f.homeStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_h_ga" type="number" value="${f.homeStats?.ga||0}"></div><div class="field"><label>Home GF</label><input id="e_h_hgf" type="number" value="${f.homeStats?.homeGf||0}"></div><div class="field"><label>Home GA</label><input id="e_h_hga" type="number" value="${f.homeStats?.homeGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_h_form" class="form-dots" style="cursor:pointer">${(f.homeForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('home',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('home')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('home')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_h_inj" value="${f.homeInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_h_kp" value="${f.homeKeyPlayer||''}"></div>
+    <div class="field"><label>League Tier</label>
+  <select id="e_h_tier">
+    <option value="1" ${f.homeStats?.tier == 1 ? 'selected' : ''}>Tier 1 (Top Flight)</option>
+    <option value="2" ${f.homeStats?.tier == 2 ? 'selected' : ''}>Tier 2</option>
+    <option value="3" ${f.homeStats?.tier == 3 ? 'selected' : ''}>Tier 3</option>
+    <option value="4" ${f.homeStats?.tier == 4 ? 'selected' : ''}>Tier 4</option>
+    <option value="5" ${f.homeStats?.tier == 5 ? 'selected' : ''}>Tier 5 (Lower/Amateur)</option>
+  </select>
+</div></div>
+    <div class="card"><h3>${f.away||'Away'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_a_mp" type="number" value="${f.awayStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_a_w" type="number" value="${f.awayStats?.w||0}"></div><div class="field"><label>D</label><input id="e_a_d" type="number" value="${f.awayStats?.d||0}"></div><div class="field"><label>L</label><input id="e_a_l" type="number" value="${f.awayStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_a_gf" type="number" value="${f.awayStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_a_ga" type="number" value="${f.awayStats?.ga||0}"></div><div class="field"><label>Away GF</label><input id="e_a_agf" type="number" value="${f.awayStats?.awayGf||0}"></div><div class="field"><label>Away GA</label><input id="e_a_aga" type="number" value="${f.awayStats?.awayGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_a_form" class="form-dots" style="cursor:pointer">${(f.awayForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('away',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('away')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('away')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_a_inj" value="${f.awayInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_a_kp" value="${f.awayKeyPlayer||''}"></div>
+    <div class="field"><label>League Tier</label>
+  <select id="e_a_tier">
+    <option value="1" ${f.awayStats?.tier == 1 ? 'selected' : ''}>Tier 1 (Top Flight)</option>
+    <option value="2" ${f.awayStats?.tier == 2 ? 'selected' : ''}>Tier 2</option>
+    <option value="3" ${f.awayStats?.tier == 3 ? 'selected' : ''}>Tier 3</option>
+    <option value="4" ${f.awayStats?.tier == 4 ? 'selected' : ''}>Tier 4</option>
+    <option value="5" ${f.awayStats?.tier == 5 ? 'selected' : ''}>Tier 5 (Lower/Amateur)</option>
+  </select>
+</div></div></div>
     <div class="card"><h3>Head-to-Head</h3><div id="e_h2h">${(f.h2h||[]).map((m,i) => `<div class="grid grid-6" style="margin-bottom:8px;align-items:end"><div class="field"><label>Date</label><input value="${m.date||''}" onchange="updateH2h(${i},'date',this.value)"></div><div class="field" style="grid-column:span 2"><label>Home</label><input value="${m.home||''}" onchange="updateH2h(${i},'home',this.value)"></div><div class="field"><label>HG</label><input type="number" value="${m.hg||0}" onchange="updateH2h(${i},'hg',+this.value)"></div><div class="field"><label>AG</label><input type="number" value="${m.ag||0}" onchange="updateH2h(${i},'ag',+this.value)"></div><div><button class="danger small" onclick="removeH2h(${i})">×</button></div></div>`).join('')}</div><button class="secondary small" onclick="addH2h()">+ Add H2H match</button></div>
     <div class="card"><h3>Betting Odds (optional)</h3><div class="grid grid-3"><div class="field"><label>Home Win</label><input id="e_oh" type="number" step="0.01" value="${f.odds?.home||''}"></div><div class="field"><label>Draw</label><input id="e_od" type="number" step="0.01" value="${f.odds?.draw||''}"></div><div class="field"><label>Away Win</label><input id="e_oa" type="number" step="0.01" value="${f.odds?.away||''}"></div></div></div>
     <div class="card"><div class="field"><label>Notes</label><textarea id="e_notes" rows="3">${f.notes||''}</textarea></div></div>
@@ -390,8 +425,8 @@ function cancelEdit() { state.view = state.currentId ? 'detail' : 'list'; render
 function saveEdit() {
   const e = state.editing;
   e.home = val('e_home'); e.away = val('e_away'); e.competition = val('e_comp'); e.date = val('e_date'); e.time = val('e_time'); e.venue = val('e_venue');
-  e.homeStats = { mp:num('e_h_mp'), w:num('e_h_w'), d:num('e_h_d'), l:num('e_h_l'), gf:num('e_h_gf'), ga:num('e_h_ga'), homeGf:num('e_h_hgf'), homeGa:num('e_h_hga') };
-  e.awayStats = { mp:num('e_a_mp'), w:num('e_a_w'), d:num('e_a_d'), l:num('e_a_l'), gf:num('e_a_gf'), ga:num('e_a_ga'), awayGf:num('e_a_agf'), awayGa:num('e_a_aga') };
+  e.homeStats = { mp:num('e_h_mp'), w:num('e_h_w'), d:num('e_h_d'), l:num('e_h_l'), gf:num('e_h_gf'), ga:num('e_h_ga'), homeGf:num('e_h_hgf'), homeGa:num('e_h_hga'), tier:num('e_h_tier') };
+  e.awayStats = { mp:num('e_a_mp'), w:num('e_a_w'), d:num('e_a_d'), l:num('e_a_l'), gf:num('e_a_gf'), ga:num('e_a_ga'), awayGf:num('e_a_agf'), awayGa:num('e_a_aga'), tier:num('e_a_tier') };
   e.homeInjuries = val('e_h_inj'); e.awayInjuries = val('e_a_inj'); e.homeKeyPlayer = val('e_h_kp'); e.awayKeyPlayer = val('e_a_kp'); e.odds = { home: num('e_oh'), draw: num('e_od'), away: num('e_oa') }; e.notes = val('e_notes');
   if (!e.home || !e.away) { setStatus('Home and Away team names required.', 'err'); render(); return; }
   if (state.currentId) { const idx = state.fixtures.findIndex(x => x.id === state.currentId); state.fixtures[idx] = { ...e, id: state.currentId }; } else { e.id = uid(); state.fixtures.unshift(e); state.currentId = e.id; }
@@ -406,8 +441,60 @@ function addH2h() { state.editing.h2h = state.editing.h2h || []; state.editing.h
 function removeH2h(i) { state.editing.h2h.splice(i, 1); preserveInputs(); render(false); }
 function updateH2h(i, field, value) { state.editing.h2h[i][field] = value; }
 function preserveInputs() {
-  const e = state.editing; const fields = ['e_home','e_away','e_comp','e_date','e_time','e_venue','e_h_mp','e_h_w','e_h_d','e_h_l','e_h_gf','e_h_ga','e_h_hgf','e_h_hga','e_a_mp','e_a_w','e_a_d','e_a_l','e_a_gf','e_a_ga','e_a_agf','e_a_aga','e_h_inj','e_a_inj','e_h_kp','e_a_kp','e_oh','e_od','e_oa','e_notes'];
-  fields.forEach(id => { const el = document.getElementById(id); if (!el) return; switch (id) { case 'e_home': e.home = el.value; break; case 'e_away': e.away = el.value; break; case 'e_comp': e.competition = el.value; break; case 'e_date': e.date = el.value; break; case 'e_time': e.time = el.value; break; case 'e_venue': e.venue = el.value; break; case 'e_h_mp': e.homeStats.mp = +el.value; break; case 'e_h_w': e.homeStats.w = +el.value; break; case 'e_h_d': e.homeStats.d = +el.value; break; case 'e_h_l': e.homeStats.l = +el.value; break; case 'e_h_gf': e.homeStats.gf = +el.value; break; case 'e_h_ga': e.homeStats.ga = +el.value; break; case 'e_h_hgf': e.homeStats.homeGf = +el.value; break; case 'e_h_hga': e.homeStats.homeGa = +el.value; break; case 'e_a_mp': e.awayStats.mp = +el.value; break; case 'e_a_w': e.awayStats.w = +el.value; break; case 'e_a_d': e.awayStats.d = +el.value; break; case 'e_a_l': e.awayStats.l = +el.value; break; case 'e_a_gf': e.awayStats.gf = +el.value; break; case 'e_a_ga': e.awayStats.ga = +el.value; break; case 'e_a_agf': e.awayStats.awayGf = +el.value; break; case 'e_a_aga': e.awayStats.awayGa = +el.value; break; case 'e_h_inj': e.homeInjuries = el.value; break; case 'e_a_inj': e.awayInjuries = el.value; break; case 'e_h_kp': e.homeKeyPlayer = el.value; break; case 'e_a_kp': e.awayKeyPlayer = el.value; break; case 'e_oh': e.odds.home = +el.value; break; case 'e_od': e.odds.draw = +el.value; break; case 'e_oa': e.odds.away = +el.value; break; case 'e_notes': e.notes = el.value; break; } });
+  const e = state.editing; 
+  const fields = [
+    'e_home','e_away','e_comp','e_date','e_time','e_venue',
+    'e_h_mp','e_h_w','e_h_d','e_h_l','e_h_gf','e_h_ga','e_h_hgf','e_h_hga',
+    'e_a_mp','e_a_w','e_a_d','e_a_l','e_a_gf','e_a_ga','e_a_agf','e_a_aga',
+    'e_h_inj','e_a_inj','e_h_kp','e_a_kp','e_h_tier','e_a_tier',
+    'e_oh','e_od','e_oa','e_notes'
+  ];
+  
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    switch (id) {
+      case 'e_home': e.home = el.value; break;
+      case 'e_away': e.away = el.value; break;
+      case 'e_comp': e.competition = el.value; break;
+      case 'e_date': e.date = el.value; break;
+      case 'e_time': e.time = el.value; break;
+      case 'e_venue': e.venue = el.value; break;
+      
+      case 'e_h_mp': e.homeStats.mp = +el.value; break;
+      case 'e_h_w': e.homeStats.w = +el.value; break;
+      case 'e_h_d': e.homeStats.d = +el.value; break;
+      case 'e_h_l': e.homeStats.l = +el.value; break;
+      case 'e_h_gf': e.homeStats.gf = +el.value; break;
+      case 'e_h_ga': e.homeStats.ga = +el.value; break;
+      case 'e_h_hgf': e.homeStats.homeGf = +el.value; break;
+      case 'e_h_hga': e.homeStats.homeGa = +el.value; break;
+      
+      case 'e_a_mp': e.awayStats.mp = +el.value; break;
+      case 'e_a_w': e.awayStats.w = +el.value; break;
+      case 'e_a_d': e.awayStats.d = +el.value; break;
+      case 'e_a_l': e.awayStats.l = +el.value; break;
+      case 'e_a_gf': e.awayStats.gf = +el.value; break;
+      case 'e_a_ga': e.awayStats.ga = +el.value; break;
+      case 'e_a_agf': e.awayStats.awayGf = +el.value; break;
+      case 'e_a_aga': e.awayStats.awayGa = +el.value; break;
+      
+      case 'e_h_inj': e.homeInjuries = el.value; break;
+      case 'e_a_inj': e.awayInjuries = el.value; break;
+      case 'e_h_kp': e.homeKeyPlayer = el.value; break;
+      case 'e_a_kp': e.awayKeyPlayer = el.value; break;
+      
+      // --- NEW TIER LOGIC ---
+      case 'e_h_tier': e.homeStats.tier = +el.value; break;
+      case 'e_a_tier': e.awayStats.tier = +el.value; break;
+      
+      case 'e_oh': e.odds.home = +el.value; break;
+      case 'e_od': e.odds.draw = +el.value; break;
+      case 'e_oa': e.odds.away = +el.value; break;
+      case 'e_notes': e.notes = el.value; break;
+    }
+  });
 }
 function parseFixtureText(text, format = 'auto') {
   text = text.trim(); if (!text) return null;
