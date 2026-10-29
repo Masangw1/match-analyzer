@@ -1,3 +1,11 @@
+# =========================================================
+# Workflow: Fetch Daily Fixtures
+# Purpose: Automatically calls the football-data.org API 
+#          every day at 00:05 UTC, saves the matches into 
+#          today_matches.json, and commits it to the repo 
+#          so the Match Analyzer app can load it instantly.
+# =========================================================
+
 name: Fetch Daily Fixtures
 on:
   schedule:
