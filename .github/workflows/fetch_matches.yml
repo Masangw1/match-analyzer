@@ -1,1 +1,26 @@
+name: Fetch Daily Matches
+on:
+  schedule:
+    - cron: '5 0 * * *' # Runs at 00:05 UTC every day
+  workflow_dispatch: # Allows you to run it manually
 
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        
+      - name: Fetch Matches from API
+        run: |
+          TODAY=$(date +'%Y-%m-%d')
+          curl -s -H "X-Auth-Token: ${{ secrets.FOOTBALL_API_KEY }}" \
+            "https://api.football-data.org/v4/matches?date=$TODAY" > today_matches.json
+            
+      - name: Commit and Push
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add today_matches.json
+          git commit -m "Auto-update daily matches" || exit 0
+          git push
