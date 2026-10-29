@@ -1,15 +1,18 @@
-name: Fetch Daily Matches
+name: Fetch Daily Fixtures
 on:
   schedule:
     - cron: '5 0 * * *' # Runs at 00:05 UTC every day
-  workflow_dispatch: # Allows you to run it manually
+  workflow_dispatch: # Allows you to click a button to run it manually
+
+permissions:
+  contents: write
 
 jobs:
   fetch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Pinned to a stable version
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v5 # Updated to support Node.js 24
         
       - name: Fetch Matches from API
         run: |
@@ -17,10 +20,10 @@ jobs:
           curl -s -H "X-Auth-Token: ${{ secrets.FOOTBALL_API_KEY }}" \
             "https://api.football-data.org/v4/matches?date=$TODAY" > today_matches.json
             
-      - name: Commit and Push
+      - name: Commit and Push File
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add today_matches.json
-          git commit -m "Auto-update daily matches" || exit 0
+          git commit -m "Auto-update daily matches for $TODAY" || exit 0
           git push
