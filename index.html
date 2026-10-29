@@ -306,8 +306,9 @@ function mapApiMatchToFixture(m) {
 
 async function fetchAndDisplayFixtures() {
   const dateInput = document.getElementById('fetchDate');
-const dateStr = dateInput ? dateInput.value : getTodayLocal();
-   if (!dateStr) { setStatus('Pick a date first.', 'err'); return; }
+  // We strictly use the date box's value, which now defaults to local today
+  const dateStr = dateInput ? dateInput.value : getTodayLocal(); 
+  if (!dateStr) { setStatus('Pick a date first.', 'err'); return; }
   state.loading = true; setStatus('Fetching fixtures...', 'info'); render();
    if (dateInput) dateInput.value = dateStr;
   try {
@@ -365,7 +366,7 @@ function renderList() {
     <div class="card">
       <h3>Fetch from football-data.org</h3>
       <div class="grid grid-3" style="align-items:end">
-      <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${today}"></div>
+      <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${getTodayLocal()}"></div>
         <div class="field" style="margin-bottom:0"><label>API Key</label><input id="apiKeyInput" type="password" placeholder="Paste key" value="${state.settings.apiKey || ''}"></div>
         <div><button onclick="saveApiKey()" style="width:100%">Save Key</button></div>
       </div>
