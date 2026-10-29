@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Match Analyzer</title>
 <style>
-   /* Hide the up/down arrows on number inputs */
+  /* Hide the up/down arrows on number inputs */
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -152,6 +152,7 @@ document.addEventListener('wheel', function(e) {
     document.activeElement.blur();
   }
 }, { passive: true });
+
 const STORAGE_KEY = 'matchAnalyzer_fixtures_v1';
 const SETTINGS_KEY = 'matchAnalyzer_settings_v1';
 
@@ -254,7 +255,8 @@ function getTodayLocal() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
    
-const API_BASE = 'https://match-analyzer-proxy.mmasangwi.workers.dev/?url=';
+// FIXED TYPO in Cloudflare URL here
+const API_BASE = 'https://match-analyzer-proxy.masangwi.workers.dev/?url=';
  
 async function fetchMatches(dateStr) {
   // 1. Try to load the pre-fetched JSON file first
@@ -298,7 +300,7 @@ function mapApiMatchToFixture(m) {
     id: uid(), home: homeName, away: awayName, competition: m.competition?.name || '',
     date: m.utcDate ? m.utcDate.slice(0, 10) : '',
     time: m.utcDate ? new Date(m.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
-    venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 },
+    venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0, tier:1 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0, tier:1 },
     homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home:'', draw:'', away:'' },
     notes: `Fetched from football-data.org on ${new Date().toLocaleDateString()}. Match ID: ${m.id}. Status: ${m.status || 'SCHEDULED'}.`, apiId: m.id
   };
@@ -359,14 +361,17 @@ function renderList() {
     const xg = calcXg(f.homeStats, f.awayStats); const matrix = poissonMatrix(xg.homeXg, xg.awayXg); const probs = calcProbabilities(matrix); const pred = predictedResult(probs);
     return `<div class="fixture-card" onclick="openFixture('${f.id}')"><div><div class="fixture-teams">${f.home} <span style="color:var(--muted);font-weight:400">vs</span> ${f.away}</div><div class="fixture-meta">${f.competition || ''} ${f.date ? '· ' + fmtDate(f.date) : ''} ${f.time ? '· ' + f.time : ''}</div></div><span class="badge ${pred.cls}">${pred.label} · ${pct(Math.max(probs.homeWin, probs.draw, probs.awayWin))}</span></div>`;
   }).join('') : '<div class="empty"><p>No fixtures yet.</p></div>';
-  const today = const today = getTodayLocal();
+  
+  // FIXED: Double const declaration here
+  const today = getTodayLocal(); 
+  
   return `
     <header><h1>⚽ Match Analyzer</h1><button onclick="newFixture()">+ Add Fixture</button></header>
     ${renderStatus()}
     <div class="card">
       <h3>Fetch from football-data.org</h3>
       <div class="grid grid-3" style="align-items:end">
-      <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${getTodayLocal()}"></div>
+      <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${today}"></div>
         <div class="field" style="margin-bottom:0"><label>API Key</label><input id="apiKeyInput" type="password" placeholder="Paste key" value="${state.settings.apiKey || ''}"></div>
         <div><button onclick="saveApiKey()" style="width:100%">Save Key</button></div>
       </div>
@@ -409,27 +414,40 @@ function renderEdit() {
   const f = state.editing;
   return `<button class="back-btn" onclick="cancelEdit()">← Cancel</button><h1 style="margin-bottom:16px">${state.currentId ? 'Edit' : 'New'} Fixture</h1>
     <div class="card"><h3>Match Info</h3><div class="grid grid-2"><div class="field"><label>Home Team</label><input id="e_home" value="${f.home||''}"></div><div class="field"><label>Away Team</label><input id="e_away" value="${f.away||''}"></div><div class="field"><label>Competition</label><input id="e_comp" value="${f.competition||''}"></div><div class="field"><label>Date</label><input id="e_date" type="date" onclick="this.showPicker()" value="${f.date||''}"></div><div class="field"><label>Time</label><input id="e_time" value="${f.time||''}"></div><div class="field"><label>Venue</label><input id="e_venue" value="${f.venue||''}"></div></div></div>
-    <div class="grid grid-2"><div class="card"><h3>${f.home||'Home'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_h_mp" type="number" value="${f.homeStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_h_w" type="number" value="${f.homeStats?.w||0}"></div><div class="field"><label>D</label><input id="e_h_d" type="number" value="${f.homeStats?.d||0}"></div><div class="field"><label>L</label><input id="e_h_l" type="number" value="${f.homeStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_h_gf" type="number" value="${f.homeStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_h_ga" type="number" value="${f.homeStats?.ga||0}"></div><div class="field"><label>Home GF</label><input id="e_h_hgf" type="number" value="${f.homeStats?.homeGf||0}"></div><div class="field"><label>Home GA</label><input id="e_h_hga" type="number" value="${f.homeStats?.homeGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_h_form" class="form-dots" style="cursor:pointer">${(f.homeForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('home',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('home')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('home')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_h_inj" value="${f.homeInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_h_kp" value="${f.homeKeyPlayer||''}"></div>
-    <div class="field"><label>League Strength</label>
-  <select id="e_h_tier">
-    <option value="1" ${f.homeStats?.tier == 1 ? 'selected' : ''}>1 - Elite (Premier League, La Liga, UCL)</option>
-    <option value="2" ${f.homeStats?.tier == 2 ? 'selected' : ''}>2 - Strong (Eredivisie, Portugal, Championship)</option>
-    <option value="3" ${f.homeStats?.tier == 3 ? 'selected' : ''}>3 - Mid (League One, Scottish Prem, League of Ireland)</option>
-    <option value="4" ${f.homeStats?.tier == 4 ? 'selected' : ''}>4 - Lower (League Two, Lower European, Asian)</option>
-    <option value="5" ${f.homeStats?.tier == 5 ? 'selected' : ''}>5 - Semi-Pro / Amateur</option>
-  </select>
-</div>
-    <div class="card"><h3>${f.away||'Away'} — Stats</h3><div class="grid grid-4"><div class="field"><label>MP</label><input id="e_a_mp" type="number" value="${f.awayStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_a_w" type="number" value="${f.awayStats?.w||0}"></div><div class="field"><label>D</label><input id="e_a_d" type="number" value="${f.awayStats?.d||0}"></div><div class="field"><label>L</label><input id="e_a_l" type="number" value="${f.awayStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_a_gf" type="number" value="${f.awayStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_a_ga" type="number" value="${f.awayStats?.ga||0}"></div><div class="field"><label>Away GF</label><input id="e_a_agf" type="number" value="${f.awayStats?.awayGf||0}"></div><div class="field"><label>Away GA</label><input id="e_a_aga" type="number" value="${f.awayStats?.awayGa||0}"></div></div><div class="field"><label>Recent Form (click to cycle)</label><div id="e_a_form" class="form-dots" style="cursor:pointer">${(f.awayForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('away',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('away')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('away')">Clear</button></div><div class="field"><label>Injuries / Absences</label><input id="e_a_inj" value="${f.awayInjuries||''}"></div><div class="field"><label>Key Player</label><input id="e_a_kp" value="${f.awayKeyPlayer||''}"></div>
-    <div class="field"><label>League Tier</label>
-  <div class="field"><label>League Strength</label>
-  <select id="e_h_tier">
-    <option value="1" ${f.homeStats?.tier == 1 ? 'selected' : ''}>1 - Elite (Premier League, La Liga, UCL)</option>
-    <option value="2" ${f.homeStats?.tier == 2 ? 'selected' : ''}>2 - Strong (Eredivisie, Portugal, Championship)</option>
-    <option value="3" ${f.homeStats?.tier == 3 ? 'selected' : ''}>3 - Mid (League One, Scottish Prem, League of Ireland)</option>
-    <option value="4" ${f.homeStats?.tier == 4 ? 'selected' : ''}>4 - Lower (League Two, Lower European, Asian)</option>
-    <option value="5" ${f.homeStats?.tier == 5 ? 'selected' : ''}>5 - Semi-Pro / Amateur</option>
-  </select>
-</div></div></div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>${f.home||'Home'} — Stats</h3>
+        <div class="grid grid-4"><div class="field"><label>MP</label><input id="e_h_mp" type="number" value="${f.homeStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_h_w" type="number" value="${f.homeStats?.w||0}"></div><div class="field"><label>D</label><input id="e_h_d" type="number" value="${f.homeStats?.d||0}"></div><div class="field"><label>L</label><input id="e_h_l" type="number" value="${f.homeStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_h_gf" type="number" value="${f.homeStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_h_ga" type="number" value="${f.homeStats?.ga||0}"></div><div class="field"><label>Home GF</label><input id="e_h_hgf" type="number" value="${f.homeStats?.homeGf||0}"></div><div class="field"><label>Home GA</label><input id="e_h_hga" type="number" value="${f.homeStats?.homeGa||0}"></div></div>
+        <div class="field"><label>Recent Form (click to cycle)</label><div id="e_h_form" class="form-dots" style="cursor:pointer">${(f.homeForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('home',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('home')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('home')">Clear</button></div>
+        <div class="field"><label>Injuries / Absences</label><input id="e_h_inj" value="${f.homeInjuries||''}"></div>
+        <div class="field"><label>Key Player</label><input id="e_h_kp" value="${f.homeKeyPlayer||''}"></div>
+        <div class="field"><label>League Strength</label>
+          <select id="e_h_tier">
+            <option value="1" ${f.homeStats?.tier == 1 ? 'selected' : ''}>1 - Elite (Premier League, La Liga, UCL)</option>
+            <option value="2" ${f.homeStats?.tier == 2 ? 'selected' : ''}>2 - Strong (Eredivisie, Portugal, Championship)</option>
+            <option value="3" ${f.homeStats?.tier == 3 ? 'selected' : ''}>3 - Mid (League One, Scottish Prem, League of Ireland)</option>
+            <option value="4" ${f.homeStats?.tier == 4 ? 'selected' : ''}>4 - Lower (League Two, Lower European, Asian)</option>
+            <option value="5" ${f.homeStats?.tier == 5 ? 'selected' : ''}>5 - Semi-Pro / Amateur</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <h3>${f.away||'Away'} — Stats</h3>
+        <div class="grid grid-4"><div class="field"><label>MP</label><input id="e_a_mp" type="number" value="${f.awayStats?.mp||0}"></div><div class="field"><label>W</label><input id="e_a_w" type="number" value="${f.awayStats?.w||0}"></div><div class="field"><label>D</label><input id="e_a_d" type="number" value="${f.awayStats?.d||0}"></div><div class="field"><label>L</label><input id="e_a_l" type="number" value="${f.awayStats?.l||0}"></div><div class="field"><label>GF</label><input id="e_a_gf" type="number" value="${f.awayStats?.gf||0}"></div><div class="field"><label>GA</label><input id="e_a_ga" type="number" value="${f.awayStats?.ga||0}"></div><div class="field"><label>Away GF</label><input id="e_a_agf" type="number" value="${f.awayStats?.awayGf||0}"></div><div class="field"><label>Away GA</label><input id="e_a_aga" type="number" value="${f.awayStats?.awayGa||0}"></div></div>
+        <div class="field"><label>Recent Form (click to cycle)</label><div id="e_a_form" class="form-dots" style="cursor:pointer">${(f.awayForm||[]).map((x,i) => `<div class="form-dot form-${x}" onclick="cycleForm('away',${i})">${x}</div>`).join('')}</div><button class="secondary small" style="margin-top:8px" onclick="addFormDot('away')">+ Add result</button><button class="secondary small" style="margin-top:8px" onclick="clearForm('away')">Clear</button></div>
+        <div class="field"><label>Injuries / Absences</label><input id="e_a_inj" value="${f.awayInjuries||''}"></div>
+        <div class="field"><label>Key Player</label><input id="e_a_kp" value="${f.awayKeyPlayer||''}"></div>
+        <div class="field"><label>League Strength</label>
+          <select id="e_a_tier">
+            <option value="1" ${f.awayStats?.tier == 1 ? 'selected' : ''}>1 - Elite (Premier League, La Liga, UCL)</option>
+            <option value="2" ${f.awayStats?.tier == 2 ? 'selected' : ''}>2 - Strong (Eredivisie, Portugal, Championship)</option>
+            <option value="3" ${f.awayStats?.tier == 3 ? 'selected' : ''}>3 - Mid (League One, Scottish Prem, League of Ireland)</option>
+            <option value="4" ${f.awayStats?.tier == 4 ? 'selected' : ''}>4 - Lower (League Two, Lower European, Asian)</option>
+            <option value="5" ${f.awayStats?.tier == 5 ? 'selected' : ''}>5 - Semi-Pro / Amateur</option>
+          </select>
+        </div>
+      </div>
+    </div>
     <div class="card"><h3>Head-to-Head</h3><div id="e_h2h">${(f.h2h||[]).map((m,i) => `<div class="grid grid-6" style="margin-bottom:8px;align-items:end"><div class="field"><label>Date</label><input value="${m.date||''}" onchange="updateH2h(${i},'date',this.value)"></div><div class="field" style="grid-column:span 2"><label>Home</label><input value="${m.home||''}" onchange="updateH2h(${i},'home',this.value)"></div><div class="field"><label>HG</label><input type="number" value="${m.hg||0}" onchange="updateH2h(${i},'hg',+this.value)"></div><div class="field"><label>AG</label><input type="number" value="${m.ag||0}" onchange="updateH2h(${i},'ag',+this.value)"></div><div><button class="danger small" onclick="removeH2h(${i})">×</button></div></div>`).join('')}</div><button class="secondary small" onclick="addH2h()">+ Add H2H match</button></div>
     <div class="card"><h3>Betting Odds (optional)</h3><div class="grid grid-3"><div class="field"><label>Home Win</label><input id="e_oh" type="number" step="0.01" value="${f.odds?.home||''}"></div><div class="field"><label>Draw</label><input id="e_od" type="number" step="0.01" value="${f.odds?.draw||''}"></div><div class="field"><label>Away Win</label><input id="e_oa" type="number" step="0.01" value="${f.odds?.away||''}"></div></div></div>
     <div class="card"><div class="field"><label>Notes</label><textarea id="e_notes" rows="3">${f.notes||''}</textarea></div></div>
@@ -438,7 +456,7 @@ function renderEdit() {
 function saveApiKey() { const k = document.getElementById('apiKeyInput')?.value?.trim(); if (!k) { setStatus('Paste your API key first.', 'err'); render(); return; } state.settings.apiKey = k; saveSettings(); setStatus('API key saved.', 'ok'); render(); }
 function openFixture(id) { state.currentId = id; state.view = 'detail'; render(); }
 function backToList() { state.view = 'list'; state.currentId = null; render(); }
-function newFixture() { state.editing = { home: '', away: '', competition: '', date: new Date().toISOString().slice(0, 10), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home: '', draw: '', away: '' }, notes: '' }; state.currentId = null; state.view = 'edit'; render(); }
+function newFixture() { state.editing = { home: '', away: '', competition: '', date: getTodayLocal(), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0, tier:1 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0, tier:1 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home: '', draw: '', away: '' }, notes: '' }; state.currentId = null; state.view = 'edit'; render(); }
 function editFixture(id) { state.editing = JSON.parse(JSON.stringify(state.fixtures.find(x => x.id === id))); state.currentId = id; state.view = 'edit'; render(); }
 function cancelEdit() { state.view = state.currentId ? 'detail' : 'list'; render(); }
 function saveEdit() {
@@ -504,7 +522,6 @@ function preserveInputs() {
       case 'e_h_kp': e.homeKeyPlayer = el.value; break;
       case 'e_a_kp': e.awayKeyPlayer = el.value; break;
       
-      // --- NEW TIER LOGIC ---
       case 'e_h_tier': e.homeStats.tier = +el.value; break;
       case 'e_a_tier': e.awayStats.tier = +el.value; break;
       
@@ -536,7 +553,7 @@ function quickAdd() {
   const format = state.settings.quickAddFormat || 'auto'; const parsed = parseFixtureText(text, format);
   if (!parsed) { const hints = { auto: 'Could not split. Try a dash or 2 lines.', newline: 'Needs exactly two lines.', dash: 'Needs a dash. Example: "Arsenal - Chelsea"', vs: 'Needs "vs". Example: "Arsenal vs Chelsea"', space: 'Needs exactly two words.', tab: 'Paste with a tab.' }; setStatus(hints[format] || 'Could not parse.', 'err'); render(); return; }
   const [home, away] = parsed;
-  const f = { id: uid(), home, away, competition: '', date: new Date().toISOString().slice(0, 10), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home:'', draw:'', away:'' }, notes: '' };
+  const f = { id: uid(), home, away, competition: '', date: getTodayLocal(), time: '', venue: '', homeStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, homeGf:0, homeGa:0, tier:1 }, awayStats: { mp:0, w:0, d:0, l:0, gf:0, ga:0, awayGf:0, awayGa:0, tier:1 }, homeForm: [], awayForm: [], h2h: [], homeInjuries: '', awayInjuries: '', homeKeyPlayer: '', awayKeyPlayer: '', odds: { home:'', draw:'', away:'' }, notes: '' };
   state.fixtures.unshift(f); save(); input.value = ''; editFixture(f.id);
 }
 function copyAnalysis(id) {
@@ -553,9 +570,7 @@ render();
 
 // Auto-fetch today's matches on startup!
 setTimeout(() => {
-  if (state.settings.apiKey || true) { // It will use the local JSON file even without an API key
-    fetchAndDisplayFixtures();
-  }
+  fetchAndDisplayFixtures();
 }, 500);
 </script>
 </body>
