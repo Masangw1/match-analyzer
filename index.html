@@ -251,6 +251,19 @@ function num(id) { const el = document.getElementById(id); return el ? (parseFlo
 const API_BASE = 'https://match-analyzer-proxy.mmasangwi.workers.dev/?url=';
  
 async function fetchMatches(dateStr) {
+  // 1. Try to load the pre-fetched JSON file first
+  try {
+    const localRes = await fetch(`./today_matches.json?t=${Date.now()}`);
+    if (localRes.ok) {
+      const localData = await localRes.json();
+      console.log("Loaded fixtures from daily background sync.");
+      return localData.matches || [];
+    }
+  } catch (e) {
+    console.log("No local JSON found, falling back to API...");
+  }
+
+  // 2. Fallback to the live API proxy if the file is missing
   const key = state.settings.apiKey;
   if (!key) throw new Error('No API key. Add your key in Settings below.');
 
@@ -259,10 +272,7 @@ async function fetchMatches(dateStr) {
   const url = `${API_BASE}${encodedUrl}`;
 
   const res = await fetch(url, {
-    headers: { 
-      'X-Auth-Token': key,
-      'Accept': 'application/json'
-    }
+    headers: { 'X-Auth-Token': key, 'Accept': 'application/json' }
   });
 
   if (!res.ok) {
