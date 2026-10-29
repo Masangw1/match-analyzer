@@ -358,7 +358,7 @@ function renderList() {
     <div class="card">
       <h3>Fetch from football-data.org</h3>
       <div class="grid grid-3" style="align-items:end">
-        <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${state.settings.lastFetched || today}"></div>
+      <div class="field" style="margin-bottom:0"><label>Date</label><input id="fetchDate" type="date" onclick="this.showPicker()" value="${today}"></div>
         <div class="field" style="margin-bottom:0"><label>API Key</label><input id="apiKeyInput" type="password" placeholder="Paste key" value="${state.settings.apiKey || ''}"></div>
         <div><button onclick="saveApiKey()" style="width:100%">Save Key</button></div>
       </div>
@@ -540,7 +540,15 @@ function copyAnalysis(id) {
 function exportData() { const blob = new Blob([JSON.stringify(state.fixtures, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'fixtures.json'; a.click(); }
 function importData() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = e => { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = ev => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { state.fixtures = data.concat(state.fixtures); save(); render(); } } catch (err) { alert('Invalid file'); } }; reader.readAsText(file); }; input.click(); }
 function clearAll() { if (!confirm('Delete ALL fixtures?')) return; state.fixtures = []; save(); render(); }
-load(); render();
+load(); 
+render();
+
+// Auto-fetch today's matches on startup!
+setTimeout(() => {
+  if (state.settings.apiKey || true) { // It will use the local JSON file even without an API key
+    fetchAndDisplayFixtures();
+  }
+}, 500);
 </script>
 </body>
 </html>
