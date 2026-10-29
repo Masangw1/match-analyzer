@@ -248,6 +248,12 @@ function h2hSummary(h2h, teamA, teamB) {
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function num(id) { const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; }
 
+// Get today's date in the user's LOCAL timezone
+function getTodayLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+   
 const API_BASE = 'https://match-analyzer-proxy.mmasangwi.workers.dev/?url=';
  
 async function fetchMatches(dateStr) {
@@ -300,9 +306,10 @@ function mapApiMatchToFixture(m) {
 
 async function fetchAndDisplayFixtures() {
   const dateInput = document.getElementById('fetchDate');
-  const dateStr = dateInput ? dateInput.value : new Date().toISOString().slice(0, 10);
-  if (!dateStr) { setStatus('Pick a date first.', 'err'); return; }
+const dateStr = dateInput ? dateInput.value : getTodayLocal();
+   if (!dateStr) { setStatus('Pick a date first.', 'err'); return; }
   state.loading = true; setStatus('Fetching fixtures...', 'info'); render();
+   if (dateInput) dateInput.value = dateStr;
   try {
     const matches = await fetchMatches(dateStr);
     state.settings.fetchedFixtures = matches.map(mapApiMatchToFixture);
@@ -351,7 +358,7 @@ function renderList() {
     const xg = calcXg(f.homeStats, f.awayStats); const matrix = poissonMatrix(xg.homeXg, xg.awayXg); const probs = calcProbabilities(matrix); const pred = predictedResult(probs);
     return `<div class="fixture-card" onclick="openFixture('${f.id}')"><div><div class="fixture-teams">${f.home} <span style="color:var(--muted);font-weight:400">vs</span> ${f.away}</div><div class="fixture-meta">${f.competition || ''} ${f.date ? '· ' + fmtDate(f.date) : ''} ${f.time ? '· ' + f.time : ''}</div></div><span class="badge ${pred.cls}">${pred.label} · ${pct(Math.max(probs.homeWin, probs.draw, probs.awayWin))}</span></div>`;
   }).join('') : '<div class="empty"><p>No fixtures yet.</p></div>';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = const today = getTodayLocal();
   return `
     <header><h1>⚽ Match Analyzer</h1><button onclick="newFixture()">+ Add Fixture</button></header>
     ${renderStatus()}
